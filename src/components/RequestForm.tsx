@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import { useFirebase } from '../contexts/FirebaseContext';
 import { Luggage, Package, ShoppingCart, HelpCircle, Clock, MessageSquare, ArrowLeft } from 'lucide-react';
 
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
-  const { addRequest } = useApp();
+  const { user, signInAsGuest, createBellRequest } = useFirebase();
   
   const [formData, setFormData] = useState({
     roomNumber: '',
@@ -16,6 +16,7 @@ const RequestForm: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   const luggageOptions = [
     { value: 'suitcase', label: 'Suitcase', icon: Luggage, description: 'Standard luggage bags' },
@@ -47,30 +48,47 @@ const RequestForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      addRequest({
+    if (!validateForm()) return;
+
+    setLoading(true);
+    
+    try {
+      // Sign in as guest if not authenticated
+      if (!user) {
+        await signInAsGuest();
+      }
+
+      // Create the request
+      const requestId = await createBellRequest({
         roomNumber: formData.roomNumber,
         luggageType: formData.luggageType as 'suitcase' | 'carry-on' | 'cart' | 'other',
         pickupTime: formData.pickupTime as 'asap' | 'scheduled',
         scheduledTime: formData.pickupTime === 'scheduled' ? formData.scheduledTime : undefined,
         notes: formData.notes || undefined,
       });
-      
+
+      // Store request ID for confirmation page
+      localStorage.setItem('currentRequestId', requestId);
       navigate('/confirmation');
+    } catch (error) {
+      console.error('Error creating request:', error);
+      alert('Failed to create request. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white">
       {/* Header */}
-      <div className="sticky top-0 bg-gray-900/90 backdrop-blur-sm border-b border-gray-700 z-10">
+      <div className="sticky top-0 bg-slate-900/90 backdrop-blur-sm border-b border-blue-700/50 z-10">
         <div className="flex items-center px-6 py-4">
           <button
             onClick={() => navigate('/')}
-            className="mr-4 p-2 rounded-lg hover:bg-gray-700 transition-colors"
+            className="mr-4 p-2 rounded-lg hover:bg-slate-700 transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
@@ -81,14 +99,14 @@ const RequestForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="px-6 py-8 space-y-8">
         {/* Room Number */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-3">
+          <label className="block text-sm font-medium text-blue-200 mb-3">
             Room Number *
           </label>
           <input
             type="text"
             value={formData.roomNumber}
             onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
-            className={`w-full bg-gray-800 border ${errors.roomNumber ? 'border-red-500' : 'border-gray-600'} rounded-xl px-4 py-4 text-white text-lg focus:outline-none focus:border-yellow-500 transition-colors`}
+            className={`w-full bg-slate-800 border ${errors.roomNumber ? 'border-red-500' : 'border-blue-600'} rounded-xl px-4 py-4 text-white text-lg focus:outline-none focus:border-amber-500 transition-colors`}
             placeholder="e.g., 1205"
           />
           {errors.roomNumber && (
@@ -98,7 +116,7 @@ const RequestForm: React.FC = () => {
 
         {/* Luggage Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-4">
+          <label className="block text-sm font-medium text-blue-200 mb-4">
             Luggage Type *
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -111,15 +129,15 @@ const RequestForm: React.FC = () => {
                   onClick={() => setFormData({ ...formData, luggageType: option.value as any })}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     formData.luggageType === option.value
-                      ? 'border-yellow-500 bg-yellow-500/10'
-                      : 'border-gray-600 bg-gray-800/50 hover:border-gray-500'
+                      ? 'border-amber-500 bg-amber-500/10'
+                      : 'border-blue-600 bg-slate-800/50 hover:border-blue-500'
                   }`}
                 >
                   <IconComponent className={`w-8 h-8 mx-auto mb-2 ${
-                    formData.luggageType === option.value ? 'text-yellow-400' : 'text-gray-400'
+                    formData.luggageType === option.value ? 'text-amber-400' : 'text-blue-300'
                   }`} />
                   <div className="text-sm font-medium text-white">{option.label}</div>
-                  <div className="text-xs text-gray-400 mt-1">{option.description}</div>
+                  <div className="text-xs text-blue-200 mt-1">{option.description}</div>
                 </button>
               );
             })}
@@ -131,7 +149,7 @@ const RequestForm: React.FC = () => {
 
         {/* Pickup Time */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-4">
+          <label className="block text-sm font-medium text-blue-200 mb-4">
             Pickup Time *
           </label>
           <div className="space-y-3">
@@ -140,16 +158,16 @@ const RequestForm: React.FC = () => {
               onClick={() => setFormData({ ...formData, pickupTime: 'asap', scheduledTime: '' })}
               className={`w-full flex items-center p-4 rounded-xl border-2 transition-all ${
                 formData.pickupTime === 'asap'
-                  ? 'border-yellow-500 bg-yellow-500/10'
-                  : 'border-gray-600 bg-gray-800/50 hover:border-gray-500'
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-blue-600 bg-slate-800/50 hover:border-blue-500'
               }`}
             >
               <Clock className={`w-6 h-6 mr-3 ${
-                formData.pickupTime === 'asap' ? 'text-yellow-400' : 'text-gray-400'
+                formData.pickupTime === 'asap' ? 'text-amber-400' : 'text-blue-300'
               }`} />
               <div className="text-left">
                 <div className="font-medium text-white">As Soon As Possible</div>
-                <div className="text-sm text-gray-400">Average wait: 5-10 minutes</div>
+                <div className="text-sm text-blue-200">Average wait: 5-10 minutes</div>
               </div>
             </button>
 
@@ -158,16 +176,16 @@ const RequestForm: React.FC = () => {
               onClick={() => setFormData({ ...formData, pickupTime: 'scheduled' })}
               className={`w-full flex items-center p-4 rounded-xl border-2 transition-all ${
                 formData.pickupTime === 'scheduled'
-                  ? 'border-yellow-500 bg-yellow-500/10'
-                  : 'border-gray-600 bg-gray-800/50 hover:border-gray-500'
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-blue-600 bg-slate-800/50 hover:border-blue-500'
               }`}
             >
               <Clock className={`w-6 h-6 mr-3 ${
-                formData.pickupTime === 'scheduled' ? 'text-yellow-400' : 'text-gray-400'
+                formData.pickupTime === 'scheduled' ? 'text-amber-400' : 'text-blue-300'
               }`} />
               <div className="text-left">
                 <div className="font-medium text-white">Schedule for Later</div>
-                <div className="text-sm text-gray-400">Choose a specific time</div>
+                <div className="text-sm text-blue-200">Choose a specific time</div>
               </div>
             </button>
           </div>
@@ -179,7 +197,7 @@ const RequestForm: React.FC = () => {
         {/* Scheduled Time Input */}
         {formData.pickupTime === 'scheduled' && (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-3">
+            <label className="block text-sm font-medium text-blue-200 mb-3">
               Select Time *
             </label>
             <input
@@ -187,7 +205,7 @@ const RequestForm: React.FC = () => {
               value={formData.scheduledTime}
               onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
               min={new Date().toISOString().slice(0, 16)}
-              className={`w-full bg-gray-800 border ${errors.scheduledTime ? 'border-red-500' : 'border-gray-600'} rounded-xl px-4 py-4 text-white text-lg focus:outline-none focus:border-yellow-500 transition-colors`}
+              className={`w-full bg-slate-800 border ${errors.scheduledTime ? 'border-red-500' : 'border-blue-600'} rounded-xl px-4 py-4 text-white text-lg focus:outline-none focus:border-amber-500 transition-colors`}
             />
             {errors.scheduledTime && (
               <p className="mt-2 text-red-400 text-sm">{errors.scheduledTime}</p>
@@ -197,15 +215,15 @@ const RequestForm: React.FC = () => {
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-3">
+          <label className="block text-sm font-medium text-blue-200 mb-3">
             Special Instructions (Optional)
           </label>
           <div className="relative">
-            <MessageSquare className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
+            <MessageSquare className="absolute left-4 top-4 w-5 h-5 text-blue-300" />
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-600 rounded-xl pl-12 pr-4 py-4 text-white resize-none focus:outline-none focus:border-yellow-500 transition-colors"
+              className="w-full bg-slate-800 border border-blue-600 rounded-xl pl-12 pr-4 py-4 text-white resize-none focus:outline-none focus:border-amber-500 transition-colors"
               rows={3}
               placeholder="e.g., Please knock softly, baby sleeping"
             />
@@ -215,9 +233,10 @@ const RequestForm: React.FC = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg shadow-yellow-500/25 active:scale-95"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg shadow-amber-500/25 active:scale-95 disabled:opacity-50 disabled:transform-none"
         >
-          Submit Request
+          {loading ? 'Submitting...' : 'Submit Request'}
         </button>
       </form>
     </div>

@@ -1,28 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
-import { Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useFirebase } from '../contexts/FirebaseContext';
+import { Lock, User, ArrowLeft, Eye, EyeOff, Bell } from 'lucide-react';
 
-const AdminLogin: React.FC = () => {
+const BellmanLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAdmin } = useApp();
+  const { signInAsBellman } = useFirebase();
   
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: '',
   });
   
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     
-    if (loginAdmin(credentials.username, credentials.password)) {
-      navigate('/admin');
-    } else {
-      setError('Invalid credentials');
+    try {
+      await signInAsBellman(credentials.email, credentials.password);
+      navigate('/bellman');
+    } catch (error: any) {
+      setError(error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,10 +44,10 @@ const AdminLogin: React.FC = () => {
           </button>
           
           <div className="bg-gradient-to-r from-amber-500 to-yellow-600 p-4 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
-            <Lock className="w-8 h-8 text-slate-900" />
+            <Bell className="w-8 h-8 text-slate-900" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Staff Login</h1>
-          <p className="text-blue-200">Access the admin dashboard</p>
+          <h1 className="text-2xl font-bold text-white mb-2">Bellman Login</h1>
+          <p className="text-blue-200">Access the bellman dashboard</p>
         </div>
 
         {/* Login Form */}
@@ -55,16 +60,16 @@ const AdminLogin: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-blue-200 mb-3">
-              Username
+              Email
             </label>
             <div className="relative">
               <User className="absolute left-4 top-4 w-5 h-5 text-blue-300" />
               <input
-                type="text"
-                value={credentials.username}
-                onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                type="email"
+                value={credentials.email}
+                onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                 className="w-full bg-slate-800 border border-blue-600 rounded-xl pl-12 pr-4 py-4 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                placeholder="Enter username"
+                placeholder="Enter your email"
                 required
               />
             </div>
@@ -81,7 +86,7 @@ const AdminLogin: React.FC = () => {
                 value={credentials.password}
                 onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                 className="w-full bg-slate-800 border border-blue-600 rounded-xl pl-12 pr-12 py-4 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                placeholder="Enter password"
+                placeholder="Enter your password"
                 required
               />
               <button
@@ -96,21 +101,21 @@ const AdminLogin: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg shadow-amber-500/25 active:scale-95"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg shadow-amber-500/25 active:scale-95 disabled:opacity-50 disabled:transform-none"
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
-        {/* Demo Credentials */}
+        {/* Demo Note */}
         <div className="mt-8 p-4 bg-slate-800/40 rounded-xl border border-blue-700/30">
-          <p className="text-blue-200 text-sm mb-2">Demo Credentials:</p>
-          <p className="text-white text-sm">Username: <span className="text-amber-400">admin</span></p>
-          <p className="text-white text-sm">Password: <span className="text-amber-400">bellhop2024</span></p>
+          <p className="text-blue-200 text-sm mb-2">Demo Bellman Account:</p>
+          <p className="text-white text-sm">Create a Firebase user with role: "bellman"</p>
         </div>
       </div>
     </div>
   );
 };
 
-export default AdminLogin;
+export default BellmanLogin;

@@ -36,10 +36,10 @@ const AdminDashboard: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'pending': return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
       case 'in-progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
       case 'completed': return 'text-green-400 bg-green-400/10 border-green-400/20';
-      default: return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+      default: return 'text-blue-300 bg-blue-300/10 border-blue-300/20';
     }
   };
 
@@ -67,23 +67,23 @@ const AdminDashboard: React.FC = () => {
   const completedCount = requests.filter(r => r.status === 'completed').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white">
       {/* Header */}
-      <div className="sticky top-0 bg-gray-900/90 backdrop-blur-sm border-b border-gray-700 z-10">
+      <div className="sticky top-0 bg-slate-900/90 backdrop-blur-sm border-b border-blue-700/50 z-10">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-yellow-400 to-amber-500 p-2 rounded-lg">
-              <Bell className="w-6 h-6 text-black" />
+            <div className="bg-gradient-to-r from-amber-500 to-yellow-600 p-2 rounded-lg shadow-lg">
+              <Bell className="w-6 h-6 text-slate-900" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">Admin Dashboard</h1>
-              <p className="text-gray-400 text-sm">Manage bellman requests</p>
+              <p className="text-blue-200 text-sm">Manage bellman requests</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <button
               onClick={() => navigate('/qr-generator')}
-              className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+              className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
               title="QR Code Generator"
             >
               <QrCode className="w-5 h-5" />
@@ -102,17 +102,17 @@ const AdminDashboard: React.FC = () => {
       {/* Stats */}
       <div className="px-6 py-6">
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-400">{pendingCount}</div>
-            <div className="text-sm text-gray-400">Pending</div>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-amber-400">{pendingCount}</div>
+            <div className="text-sm text-blue-200">Pending</div>
           </div>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-blue-400">{inProgressCount}</div>
-            <div className="text-sm text-gray-400">In Progress</div>
+            <div className="text-sm text-blue-200">In Progress</div>
           </div>
           <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-green-400">{completedCount}</div>
-            <div className="text-sm text-gray-400">Completed</div>
+            <div className="text-sm text-blue-200">Completed</div>
           </div>
         </div>
 
@@ -125,8 +125,8 @@ const AdminDashboard: React.FC = () => {
                 onClick={() => setFilter(status as any)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filter === status
-                    ? 'bg-yellow-500 text-black'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-amber-500 text-slate-900'
+                    : 'bg-slate-700 text-blue-200 hover:bg-slate-600'
                 }`}
               >
                 {status === 'all' ? 'All' : status.split('-').map(word => 
@@ -137,12 +137,12 @@ const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="relative">
-            <Filter className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            <Filter className="absolute left-3 top-3 w-5 h-5 text-blue-300" />
             <input
               type="text"
               value={roomFilter}
               onChange={(e) => setRoomFilter(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-600 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+              className="w-full bg-slate-800 border border-blue-600 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
               placeholder="Filter by room number..."
             />
           </div>
@@ -152,10 +152,10 @@ const AdminDashboard: React.FC = () => {
         <div className="space-y-4">
           {filteredRequests.length === 0 ? (
             <div className="text-center py-12">
-              <div className="bg-gray-800/50 rounded-xl p-8">
-                <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No requests found</p>
-                <p className="text-gray-500 text-sm">Requests will appear here as they come in</p>
+              <div className="bg-slate-800/60 rounded-xl p-8 border border-blue-700/30">
+                <Bell className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+                <p className="text-blue-200 text-lg">No requests found</p>
+                <p className="text-blue-300 text-sm">Requests will appear here as they come in</p>
               </div>
             </div>
           ) : (
@@ -164,15 +164,15 @@ const AdminDashboard: React.FC = () => {
               const LuggageIcon = getLuggageIcon(request.luggageType);
               
               return (
-                <div key={request.id} className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                <div key={request.id} className="bg-slate-800/60 rounded-xl p-6 border border-blue-700/30">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-gray-700 p-2 rounded-lg">
-                        <LuggageIcon className="w-5 h-5 text-gray-300" />
+                      <div className="bg-slate-700 p-2 rounded-lg">
+                        <LuggageIcon className="w-5 h-5 text-blue-200" />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-white">Room {request.roomNumber}</h3>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-blue-200 text-sm">
                           {format(request.timestamp, 'MMM d, h:mm a')}
                         </p>
                       </div>
@@ -188,11 +188,11 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                     <div>
-                      <span className="text-gray-400">Luggage: </span>
+                      <span className="text-blue-200">Luggage: </span>
                       <span className="text-white capitalize">{request.luggageType.replace('-', ' ')}</span>
                     </div>
                     <div>
-                      <span className="text-gray-400">Pickup: </span>
+                      <span className="text-blue-200">Pickup: </span>
                       <span className="text-white">
                         {request.pickupTime === 'asap' ? 'ASAP' : 
                          request.scheduledTime ? format(new Date(request.scheduledTime), 'h:mm a') : 'Scheduled'}
@@ -201,8 +201,8 @@ const AdminDashboard: React.FC = () => {
                   </div>
 
                   {request.notes && (
-                    <div className="mb-4 p-3 bg-gray-700/50 rounded-lg">
-                      <p className="text-gray-300 text-sm">{request.notes}</p>
+                    <div className="mb-4 p-3 bg-slate-700/60 rounded-lg">
+                      <p className="text-blue-100 text-sm">{request.notes}</p>
                     </div>
                   )}
 

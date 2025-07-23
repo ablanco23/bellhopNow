@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admin can read all user profiles
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Bell requests collection
+    match /bellRequests/{requestId} {
+      // Guests can create requests and read their own requests
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && 
+        (resource.data.guestId == request.auth.uid ||
+         getUserRole() in ['bellman', 'admin']);
+      
+      // Bellmen can read pending requests
+      allow read: if request.auth != null && 
+        (resource.data.status == 'pending' && getUserRole() == 'bellman');
+      
+      // Bellmen can update pending requests to accepted, and accepted requests to completed
+      allow update: if request.auth != null && 
+        getUserRole() in ['bellman', 'admin'] &&
+        // Only allow specific field updates
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'bellmanId', 'bellmanName', 'acceptedAt']);
+      
+      // Admin can do everything
+      allow read, write: if request.auth != null && getUserRole() == 'admin';
+    }
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+  }
+}
