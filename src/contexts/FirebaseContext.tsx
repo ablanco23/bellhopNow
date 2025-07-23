@@ -1,20 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
+import {
   User,
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
   onSnapshot,
   updateDoc,
   serverTimestamp
@@ -49,22 +49,20 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setUser(user);
 
       if (user) {
-        // Get custom claims
-        const tokenResult = await user.getIdTokenResult();
-        const customRole = tokenResult.claims.role;
-
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const existingData = userDoc.exists() ? userDoc.data() : null;
+        if (userDoc.exists()) {
+          setUserProfile(userDoc.data() as UserProfile);
+        } else {
+          const profile: UserProfile = {
+            uid: user.uid,
+            email: user.email || '',
+            role: 'guest',
+            ...(user.displayName && { displayName: user.displayName })
+          };
 
-        const profile: UserProfile = {
-          uid: user.uid,
-          email: user.email || '',
-          role: customRole || existingData?.role || 'guest',
-          displayName: user.displayName || existingData?.displayName || undefined
-        };
-
-        await setDoc(doc(db, 'users', user.uid), profile, { merge: true });
-        setUserProfile(profile);
+          await setDoc(doc(db, 'users', user.uid), profile);
+          setUserProfile(profile);
+        }
       } else {
         setUserProfile(null);
       }
@@ -81,7 +79,6 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const signInAsBellman = async (email: string, password: string) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
-
     const userDoc = await getDoc(doc(db, 'users', result.user.uid));
     if (!userDoc.exists() || userDoc.data().role !== 'bellman') {
       await signOut(auth);
@@ -100,7 +97,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...requestData,
       status: 'pending' as const,
       timestamp: serverTimestamp(),
-      guestId: user.uid
+      guestId: user.uid,
+      ...(requestData.scheduledTime && { scheduledTime: requestData.scheduledTime })
     };
 
     const docRef = await addDoc(collection(db, 'bellRequests'), request);
