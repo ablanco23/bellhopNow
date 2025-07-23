@@ -3,7 +3,6 @@ import {
   User,
   signInAnonymously,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
@@ -18,8 +17,7 @@ import {
   orderBy, 
   onSnapshot,
   updateDoc,
-  serverTimestamp,
-  Timestamp
+  serverTimestamp
 } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserProfile, LuggageRequest } from '../types';
@@ -49,29 +47,28 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
+
       if (user) {
-        // Get or create user profile
+        // Get custom claims
+        const tokenResult = await user.getIdTokenResult();
+        const customRole = tokenResult.claims.role;
+
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
-        } else {
-          // Create default guest profile
-          const profile: UserProfile = {
-            uid: user.uid,
-            email: user.email || '',
-            role: 'guest',
-            displayName: user.displayName || undefined
-          };
-          
-          await setDoc(doc(db, 'users', user.uid), profile);
-          setUserProfile(profile);
-        }
+        const existingData = userDoc.exists() ? userDoc.data() : null;
+
+        const profile: UserProfile = {
+          uid: user.uid,
+          email: user.email || '',
+          role: customRole || existingData?.role || 'guest',
+          displayName: user.displayName || existingData?.displayName || undefined
+        };
+
+        await setDoc(doc(db, 'users', user.uid), profile, { merge: true });
+        setUserProfile(profile);
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -84,8 +81,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const signInAsBellman = async (email: string, password: string) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
-    
-    // Check if user has bellman role
+
     const userDoc = await getDoc(doc(db, 'users', result.user.uid));
     if (!userDoc.exists() || userDoc.data().role !== 'bellman') {
       await signOut(auth);
@@ -148,7 +144,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         timestamp: doc.data().timestamp?.toDate() || new Date(),
         acceptedAt: doc.data().acceptedAt?.toDate()
       })) as LuggageRequest[];
-      
+
       callback(requests);
     });
   };
@@ -166,7 +162,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...doc.data(),
         timestamp: doc.data().timestamp?.toDate() || new Date()
       })) as LuggageRequest[];
-      
+
       callback(requests);
     });
   };
