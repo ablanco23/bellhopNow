@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
 import { FirebaseProvider } from './contexts/FirebaseContext';
@@ -12,8 +12,21 @@ import BellmanLogin from './components/BellmanLogin';
 import BellmanDashboard from './components/BellmanDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import BellmanProtectedRoute from './components/BellmanProtectedRoute';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+
+
 
 function App() {
+
+  useEffect(() => {
+  const auth = getAuth();
+  if (!auth.currentUser) {
+    signInAnonymously(auth)
+      .then(() => console.log('✅ Signed in anonymously'))
+      .catch((err) => console.error('❌ Failed to sign in:', err));
+  }
+}, []);
+
   return (
     <FirebaseProvider>
       <AppProvider>
