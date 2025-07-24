@@ -55,9 +55,10 @@ export const useRequests = () => {
 
     await addDoc(collection(db, 'requests'), {
       ...formData,
-      guestId: user.uid,
-      timestamp: Timestamp.now(),
+      guestId: user.uid, // ✅ NOT userId
+      timestamp: new Date()
     });
+
 
     await loadRequests();
   };
