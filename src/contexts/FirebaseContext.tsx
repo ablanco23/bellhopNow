@@ -90,20 +90,21 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await signOut(auth);
   };
 
-  const createBellRequest = async (requestData: Omit<LuggageRequest, 'id' | 'status' | 'timestamp' | 'guestId'>): Promise<string> => {
+  const createBellRequest = async (requestData: Omit<LuggageRequest, 'id' | 'status' | 'timestamp' | 'userId'>): Promise<string> => {
     if (!user) throw new Error('User must be authenticated');
 
     const request = {
       ...requestData,
       status: 'pending' as const,
       timestamp: serverTimestamp(),
-      guestId: user.uid,
-      scheduledTime: requestData.scheduledTime ?? '' // avoid undefined
+      userId: user.uid, // ✅ This must match Firestore rule check
+      scheduledTime: requestData.scheduledTime ?? ''
     };
 
     const docRef = await addDoc(collection(db, 'bellRequests'), request);
     return docRef.id;
   };
+
 
   const acceptRequest = async (requestId: string) => {
     if (!user || !userProfile || userProfile.role !== 'bellman') {
