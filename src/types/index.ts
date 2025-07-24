@@ -9,14 +9,17 @@ export interface UserProfile {
 
 export interface LuggageRequest {
   id: string;
-  guestId: string;
-  guestName: string; // made required for consistency
   roomNumber: string;
+  luggageType: string;
+  pickupTime: string;
+  scheduledTime?: string;
   notes?: string;
   status: 'pending' | 'accepted' | 'completed';
-  bellmanId?: string;
-  bellmanName?: string;
   timestamp: Date;
   acceptedAt?: Date;
-  scheduledTime: string; // made required to avoid undefined Firestore errors
+  bellmanId?: string;
+  bellmanName?: string;
+  guestIdentifier: string;      // e.g., "1205-7025551234"
+  phoneNumber: string;          // optional but useful
 }
+

@@ -29,10 +29,10 @@ interface FirebaseContextType {
   signInAsGuest: () => Promise<void>;
   signInAsBellman: (email: string, password: string) => Promise<void>;
   signOutUser: () => Promise<void>;
-  createBellRequest: (request: Omit<LuggageRequest, 'id' | 'status' | 'timestamp' | 'guestId'>) => Promise<string>;
+  createBellRequest: (request: Omit<LuggageRequest, 'id' | 'status' | 'timestamp' | 'guestIdentifier'> & { phoneNumber: string }) => Promise<string>;
   acceptRequest: (requestId: string) => Promise<void>;
   updateRequestStatus: (requestId: string, status: LuggageRequest['status']) => Promise<void>;
-  subscribeToUserRequests: (guestId: string, callback: (requests: LuggageRequest[]) => void) => () => void;
+  subscribeToUserRequests: (guestIdentifier: string, callback: (requests: LuggageRequest[]) => void) => () => void;
   subscribeToPendingRequests: (callback: (requests: LuggageRequest[]) => void) => () => void;
   subscribeToRequest: (requestId: string, callback: (request: LuggageRequest | null) => void) => () => void;
 }
@@ -90,21 +90,23 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await signOut(auth);
   };
 
-  const createBellRequest = async (requestData: Omit<LuggageRequest, 'id' | 'status' | 'timestamp' | 'userId'>): Promise<string> => {
+  const createBellRequest = async (
+    requestData: Omit<LuggageRequest, 'id' | 'status' | 'timestamp' | 'guestIdentifier'> & { phoneNumber: string }
+  ): Promise<string> => {
     if (!user) throw new Error('User must be authenticated');
+
+    const guestIdentifier = `${requestData.roomNumber}-${requestData.phoneNumber}`;
 
     const request = {
       ...requestData,
       status: 'pending' as const,
       timestamp: serverTimestamp(),
-      userId: user.uid, // ✅ This must match Firestore rule check
-      scheduledTime: requestData.scheduledTime ?? ''
+      guestIdentifier
     };
 
     const docRef = await addDoc(collection(db, 'bellRequests'), request);
     return docRef.id;
   };
-
 
   const acceptRequest = async (requestId: string) => {
     if (!user || !userProfile || userProfile.role !== 'bellman') {
@@ -129,10 +131,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const subscribeToUserRequests = (guestId: string, callback: (requests: LuggageRequest[]) => void) => {
+  const subscribeToUserRequests = (guestIdentifier: string, callback: (requests: LuggageRequest[]) => void) => {
     const q = query(
       collection(db, 'bellRequests'),
-      where('guestId', '==', guestId),
+      where('guestIdentifier', '==', guestIdentifier),
       orderBy('timestamp', 'desc')
     );
 

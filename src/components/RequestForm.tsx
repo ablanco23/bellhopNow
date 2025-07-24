@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { Luggage, Package, ShoppingCart, HelpCircle, Clock, MessageSquare, ArrowLeft } from 'lucide-react';
+import {
+  Luggage,
+  Package,
+  ShoppingCart,
+  HelpCircle,
+  Clock,
+  MessageSquare,
+  ArrowLeft,
+  Phone,
+} from 'lucide-react';
 
 const RequestForm: React.FC = () => {
   const navigate = useNavigate();
@@ -9,6 +18,7 @@ const RequestForm: React.FC = () => {
 
   const [formData, setFormData] = useState({
     roomNumber: '',
+    phoneNumber: '', // ✅ Added phone number
     luggageType: '' as 'suitcase' | 'carry-on' | 'cart' | 'other' | '',
     pickupTime: '' as 'asap' | 'scheduled' | '',
     scheduledTime: '',
@@ -19,7 +29,6 @@ const RequestForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Ensure guest is signed in before proceeding
     if (!user) {
       signInAsGuest().catch((err) => {
         console.error('Anonymous sign-in failed:', err);
@@ -37,14 +46,13 @@ const RequestForm: React.FC = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.roomNumber.trim()) newErrors.roomNumber = 'Room number is required';
+    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
     if (!formData.luggageType) newErrors.luggageType = 'Please select luggage type';
     if (!formData.pickupTime) newErrors.pickupTime = 'Please select pickup time';
     if (formData.pickupTime === 'scheduled' && !formData.scheduledTime) {
       newErrors.scheduledTime = 'Please select a time';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -56,12 +64,14 @@ const RequestForm: React.FC = () => {
     setLoading(true);
 
     try {
-      // Ensure guest is authenticated
       if (!user) await signInAsGuest();
 
-      // Construct request payload
+      const guestIdentifier = `${formData.roomNumber}-${formData.phoneNumber}`;
+
       const requestId = await createBellRequest({
         roomNumber: formData.roomNumber,
+        phoneNumber: formData.phoneNumber,
+        guestIdentifier, // ✅ New field
         luggageType: formData.luggageType,
         pickupTime: formData.pickupTime,
         scheduledTime: formData.pickupTime === 'scheduled' ? formData.scheduledTime : undefined,
@@ -104,7 +114,23 @@ const RequestForm: React.FC = () => {
           {errors.roomNumber && <p className="mt-2 text-red-400 text-sm">{errors.roomNumber}</p>}
         </div>
 
-        {/* Luggage Options */}
+        {/* Phone Number */}
+        <div>
+          <label className="block text-sm font-medium text-blue-200 mb-3">Phone Number *</label>
+          <div className="relative">
+            <Phone className="absolute left-4 top-4 w-5 h-5 text-blue-300" />
+            <input
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              className={`w-full bg-slate-800 border ${errors.phoneNumber ? 'border-red-500' : 'border-blue-600'} rounded-xl pl-12 pr-4 py-4 text-white text-lg focus:outline-none focus:border-amber-500 transition-colors`}
+              placeholder="e.g., 2105551234"
+            />
+          </div>
+          {errors.phoneNumber && <p className="mt-2 text-red-400 text-sm">{errors.phoneNumber}</p>}
+        </div>
+
+        {/* Luggage Type */}
         <div>
           <label className="block text-sm font-medium text-blue-200 mb-4">Luggage Type *</label>
           <div className="grid grid-cols-2 gap-3">
@@ -145,7 +171,7 @@ const RequestForm: React.FC = () => {
               <Clock className={`w-6 h-6 mr-3 ${formData.pickupTime === 'asap' ? 'text-amber-400' : 'text-blue-300'}`} />
               <div className="text-left">
                 <div className="font-medium text-white">As Soon As Possible</div>
-                <div className="text-sm text-blue-200">Average wait: 5-10 minutes</div>
+                <div className="text-sm text-blue-200">Average wait: 5–10 minutes</div>
               </div>
             </button>
 
