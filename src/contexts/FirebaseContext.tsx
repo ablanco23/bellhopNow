@@ -57,7 +57,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             uid: user.uid,
             email: user.email || '',
             role: 'guest',
-            ...(user.displayName && { displayName: user.displayName })
+            displayName: user.displayName ?? 'Guest'
           };
 
           await setDoc(doc(db, 'users', user.uid), profile);
@@ -98,7 +98,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       status: 'pending' as const,
       timestamp: serverTimestamp(),
       guestId: user.uid,
-      ...(requestData.scheduledTime && { scheduledTime: requestData.scheduledTime })
+      scheduledTime: requestData.scheduledTime ?? '' // avoid undefined
     };
 
     const docRef = await addDoc(collection(db, 'bellRequests'), request);

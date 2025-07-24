@@ -4,13 +4,13 @@ export interface UserProfile {
   uid: string;
   email: string;
   role: UserRole;
-  displayName?: string;
+  displayName: string; // made required to avoid Firebase "undefined" errors
 }
 
 export interface LuggageRequest {
   id: string;
   guestId: string;
-  guestName?: string;
+  guestName: string; // made required for consistency
   roomNumber: string;
   notes?: string;
   status: 'pending' | 'accepted' | 'completed';
@@ -18,5 +18,5 @@ export interface LuggageRequest {
   bellmanName?: string;
   timestamp: Date;
   acceptedAt?: Date;
-  scheduledTime?: string; // optional ISO timestamp string
+  scheduledTime: string; // made required to avoid undefined Firestore errors
 }
