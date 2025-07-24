@@ -8,6 +8,8 @@ import {
   addDoc,
   Timestamp,
 } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { UserProfile } from '../types';
 
 export const useRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -17,7 +19,31 @@ export const useRequests = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const q = query(collection(db, 'requests'), where('guestId', '==', user.uid));
+    // Fetch user profile to determine role
+    const profileSnap = await getDoc(doc(db, 'users', user.uid));
+    if (!profileSnap.exists()) {
+      console.warn('User profile not found');
+      setLoading(false);
+      return;
+    }
+
+    const profile = profileSnap.data() as UserProfile;
+
+    let q;
+
+    if (profile.role === 'guest') {
+      q = query(collection(db, 'requests'), where('guestId', '==', user.uid));
+    } else if (profile.role === 'bellman') {
+      q = query(collection(db, 'requests'), where('bellmanId', '==', user.uid));
+    } else if (profile.role === 'admin') {
+      // admins can see all requests (you could filter further if needed)
+      q = collection(db, 'requests');
+    } else {
+      console.warn('Unknown role:', profile.role);
+      setLoading(false);
+      return;
+    }
+
     const snapshot = await getDocs(q);
     setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     setLoading(false);
@@ -42,5 +68,5 @@ export const useRequests = () => {
     }
   }, []);
 
-  return { requests, loading, createRequest };
+  return { requests, loading, createRequest, reload: loadRequests };
 };
