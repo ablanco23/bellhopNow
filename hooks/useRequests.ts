@@ -1,4 +1,3 @@
-// hooks/useRequests.ts
 import { useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import {
@@ -7,6 +6,7 @@ import {
   where,
   getDocs,
   addDoc,
+  Timestamp,
 } from 'firebase/firestore';
 
 export const useRequests = () => {
@@ -17,7 +17,7 @@ export const useRequests = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const q = query(collection(db, 'requests'), where('userId', '==', user.uid));
+    const q = query(collection(db, 'requests'), where('guestId', '==', user.uid));
     const snapshot = await getDocs(q);
     setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     setLoading(false);
@@ -29,8 +29,8 @@ export const useRequests = () => {
 
     await addDoc(collection(db, 'requests'), {
       ...formData,
-      userId: user.uid,
-      timestamp: new Date(),
+      guestId: user.uid,
+      timestamp: Timestamp.now(),
     });
 
     await loadRequests();
