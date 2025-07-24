@@ -71,12 +71,13 @@ const RequestForm: React.FC = () => {
       const requestId = await createBellRequest({
         roomNumber: formData.roomNumber,
         phoneNumber: formData.phoneNumber,
-        guestIdentifier, // ✅ New field
+        guestIdentifier,
         luggageType: formData.luggageType,
         pickupTime: formData.pickupTime,
-        scheduledTime: formData.pickupTime === 'scheduled' ? formData.scheduledTime : undefined,
         notes: formData.notes || undefined,
+        ...(formData.pickupTime === 'scheduled' && { scheduledTime: formData.scheduledTime })
       });
+
 
       localStorage.setItem('currentRequestId', requestId);
       navigate('/confirmation');
