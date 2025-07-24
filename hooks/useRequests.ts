@@ -8,7 +8,6 @@ import {
   addDoc,
   doc,
   getDoc,
-  Timestamp,
 } from 'firebase/firestore';
 import { UserProfile } from '../types';
 
@@ -20,7 +19,6 @@ export const useRequests = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    // Fetch user profile to determine role
     const profileSnap = await getDoc(doc(db, 'users', user.uid));
     if (!profileSnap.exists()) {
       console.warn('User profile not found');
@@ -31,13 +29,11 @@ export const useRequests = () => {
     const profile = profileSnap.data() as UserProfile;
     let q;
 
-    // Build query based on role
+    // 🔐 Role-based filtering
     if (profile.role === 'guest') {
-      q = query(collection(db, 'requests'), where('userId', '==', user.uid));
-    } else if (profile.role === 'bellman') {
-      q = query(collection(db, 'requests'), where('bellmanId', '==', user.uid));
-    } else if (profile.role === 'admin') {
-      q = collection(db, 'requests'); // Admins see all
+      q = query(collection(db, 'bellRequests'), where('guestIdentifier', '==', user.uid));
+    } else if (profile.role === 'bellman' || profile.role === 'admin') {
+      q = collection(db, 'bellRequests'); // Bellmen and admins see all
     } else {
       console.warn('Unknown role:', profile.role);
       setLoading(false);
@@ -53,10 +49,10 @@ export const useRequests = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    await addDoc(collection(db, 'requests'), {
+    await addDoc(collection(db, 'bellRequests'), {
       ...formData,
-      guestIdentifier: user.uid, // ✅ Matches Firestore rule field
-      timestamp: Timestamp.now(),
+      guestIdentifier: user.uid, // 🔑 Required for guest filtering
+      timestamp: new Date(),
     });
 
     await loadRequests();
