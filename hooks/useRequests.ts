@@ -55,7 +55,7 @@ export const useRequests = () => {
 
     await addDoc(collection(db, 'requests'), {
       ...formData,
-      userId: user.uid, // ✅ Matches Firestore rule field
+      guestIdentifier: user.uid, // ✅ Matches Firestore rule field
       timestamp: Timestamp.now(),
     });
 
