@@ -6,9 +6,10 @@ import {
   where,
   getDocs,
   addDoc,
+  doc,
+  getDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../types';
 
 export const useRequests = () => {
@@ -28,16 +29,15 @@ export const useRequests = () => {
     }
 
     const profile = profileSnap.data() as UserProfile;
-
     let q;
 
+    // Build query based on role
     if (profile.role === 'guest') {
-      q = query(collection(db, 'requests'), where('guestId', '==', user.uid));
+      q = query(collection(db, 'requests'), where('userId', '==', user.uid));
     } else if (profile.role === 'bellman') {
       q = query(collection(db, 'requests'), where('bellmanId', '==', user.uid));
     } else if (profile.role === 'admin') {
-      // admins can see all requests (you could filter further if needed)
-      q = collection(db, 'requests');
+      q = collection(db, 'requests'); // Admins see all
     } else {
       console.warn('Unknown role:', profile.role);
       setLoading(false);
@@ -55,10 +55,9 @@ export const useRequests = () => {
 
     await addDoc(collection(db, 'requests'), {
       ...formData,
-      guestId: user.uid, // ✅ NOT userId
-      timestamp: new Date()
+      userId: user.uid, // ✅ Matches Firestore rule field
+      timestamp: Timestamp.now(),
     });
-
 
     await loadRequests();
   };
